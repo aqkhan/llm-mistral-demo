@@ -13,6 +13,9 @@ from langchain_experimental.sql import SQLDatabaseChain
 
 from langchain.llms.llamacpp import LlamaCpp
 
+from langchain.globals import set_llm_cache
+from langchain.cache import SQLiteCache
+
 # Import config vars
 with open('config.yml', 'r', encoding='utf8') as ymlfile:
     cfg = box.Box(yaml.safe_load(ymlfile))
@@ -34,12 +37,14 @@ print(f'\nDB URL: {DB_URL}')
 
 start = timeit.default_timer()
 
+set_llm_cache(SQLiteCache(database_path="langchain_cache.db"))
+
 llm = LlamaCpp(
     model_path=model_local_path,
-    temperature=0,
+    temperature=0.2,
     max_tokens=8000,
     top_p=1,
-    verbose=True,  # Verbose is required to pass to the callback manager
+    verbose=False,
     n_ctx=4096
 )
 
@@ -50,7 +55,7 @@ db = SQLDatabase.from_uri(
 
 schema = db.get_table_info(table_names=['projects'])
 
-chain = SQLDatabaseChain.from_llm(llm=llm,db=db,verbose=True)
+chain = SQLDatabaseChain.from_llm(llm=llm,db=db,verbose=False)
 
 QUERY = """
 Given an input question, first create a syntactically correct postgresql query to run, then look at the results of the query and return the answer. If you can not find any answer do not start assuming stuff, return 'None' instead.
